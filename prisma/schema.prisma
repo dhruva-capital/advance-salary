@@ -1,0 +1,118 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+// schema.prisma
+
+// generator client {
+//   provider = "prisma-client-js"
+// }
+
+// datasource db {
+//   provider = "postgresql"
+//   url      = env("DATABASE_URL")
+// }
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
+model Superadmin {
+  id       String @id @default(uuid())
+  username String @unique
+  password String
+  admins   Admin[]
+}
+
+model Admin {
+  admin_id     String    @id @default(uuid())
+  username     String    @unique
+  password     String
+  shares       Share[]
+  superadmin   Superadmin @relation(fields: [superadminId], references: [id])
+  superadminId String
+}
+
+model Share {
+  id      String @id @default(uuid())
+  username String
+  percent Int
+  admin    Admin   @relation(fields: [adminId], references: [admin_id])
+  adminId  String
+}
+
+model Company {
+  company_id String    @id @default(uuid())
+  username   String    @unique
+  password   String
+  employees  Employee[]
+  requests   Request[]
+}
+
+model Employee {
+  employee_id      String          @id @default(uuid())
+  name             String
+  password         String
+  basic_details    BasicDetails?
+  basicDetailsId   String          @unique
+  salary           Int
+  advanced_salary  Int
+  pending_salary   Int
+  account_details  AccountDetails?
+  accountDetailsId String          @unique
+  company          Company         @relation(fields: [companyId], references: [company_id])
+  companyId        String
+  requests         Request[]
+  transactions     Transaction[]
+}
+
+model BasicDetails {
+  id          String   @id @default(uuid())
+  aadhar_card Int
+  pan_card    String
+  employee    Employee @relation(fields: [employeeId], references: [employee_id])
+  employeeId  String   @unique
+}
+
+model AccountDetails {
+  id             String   @id @default(uuid())
+  holder_name    String
+  account_number Int
+  ifsc_code      String
+  linked_pan_card String
+  employee       Employee @relation(fields: [employeeId], references: [employee_id])
+  employeeId     String   @unique
+}
+
+model Request {
+  id             String         @id @default(uuid())
+  request_amount String
+  status         RequestStatus  @default(PENDING)
+  employee       Employee       @relation(fields: [employeeId], references: [employee_id])
+  employeeId     String
+  company        Company        @relation(fields: [companyId], references: [company_id])
+  companyId      String
+  createdAt      DateTime       @default(now())
+}
+
+model Transaction {
+  txn_id     String   @id @default(uuid())
+  invoice    String
+  receiver   Employee @relation(fields: [receiverId], references: [employee_id])
+  receiverId String
+  timestamp  DateTime @default(now())
+}
